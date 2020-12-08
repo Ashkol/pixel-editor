@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');
+
+body {
+    background-color: grey;
+    font-family: 'DM Mono', monospace;
+    --navbar-dark-color: rgb(65, 65, 65);
+    --text-color: #fff;
+    margin: 0px;
+    color: var(--text-color);
+}
+
+.pixel-canvas {
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin: 1rem;
+}
+
+.pixel-cell{
+    border: 1px solid grey;
+    background-color: white;
+    height: 50px;
+    width: 50px;
+}
+
+.color-palette {
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.palette-cell {
+    height: 50px;
+    width: 50px;
+    border: 1px solid grey;
+    border-radius: 10%;
+}
+
+.main-view {
+    display: flex;
+    flex-direction: row; 
+    justify-content: center; 
+    align-items: center;
+    position: absolute;
+    width: 100%;
+}
+.desktop {
+    display: flex;
+    flex-direction: row; 
+    justify-content: center; 
+    align-items: center;
+}
+
+.navbar {
+    height: 70px;
+    width: 100%;
+    background: var(--navbar-dark-color);
+    color: var(--text-color);
+}
+
+.navbar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    height: 100%;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+}
+
+.editor-button {
+    height: 40px;
+    width: 90px;
+    background: var(--navbar-dark-color);
+    color: var(--text-color);
+    border: 3px solid #28242f;
+    font-family: 'DM Mono', monospace;
+    border-radius: 10%;
+    outline: none;
+    margin: 10px;
+}
+
+.editor-button:hover {
+    color: white;
+    background: #28242f;
+    text-shadow: none;
+    border-color: white;
+}
+
+.editor-buttons-box {
+    display: flex;
+    flex-direction: row;
+    margin: 1rem;
+    width: auto;
+    align-items: center;
+    justify-content: space-evenly;
+}
