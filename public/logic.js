@@ -1,19 +1,21 @@
-const canvasSize = 16;
+const CANVAS_SIZE = 16;
+const STROKE_LENGTH = 100;
+const STROKES_REMEMBERED = 20;
 let chosenColor;
 let prevColor;
-paintQueue = []
+let isDragging;
+let paintQueue = [];
+let strokeQueue = [];
 setup();
 
 function setup() {
-    createPixelCanvas(canvasSize);
+    createPixelCanvas(CANVAS_SIZE);
     createColorPalette(5);
     setCanvasListeners();
     setColorPaletteListeners();
-    document.getElementById("buttonCancel").addEventListener('click', reversePaint);
-    document.getElementById("buttonSave").addEventListener('click', createImage);
+    document.getElementById("buttonCancel").addEventListener('click', reverseStroke);
+    document.getElementById("buttonSave").addEventListener('click', downloadImage);
 }
-
-
 
 function createPixelCanvas(size) {
     let table = document.createElement('table');
@@ -31,61 +33,6 @@ function createPixelCanvas(size) {
     table.classList.add("pixel-canvas");
     table.setAttribute('id', 'pixelCanvas');
     document.getElementById("desktop").insertBefore(table, document.getElementById("canvasSide"));
-    
-}
-
-function setCanvasListeners() {
-    let pixelCanvas = document.getElementById("pixelCanvas");
-        if (pixelCanvas != null) {
-        for (let i = 0; i < pixelCanvas.rows.length; i++) {
-            for (let j = 0; j < pixelCanvas.rows[i].cells.length; j++)
-            {
-                const cell = pixelCanvas.rows[i].cells[j];
-               
-                function enter () {
-                    prevColor = cell.style.backgroundColor;
-                    changeCellColor(chosenColor, cell);
-                }
-                function leave () {
-                    changeCellColor(prevColor, cell);
-                }
-                function click () {
-                    addToPaintQueue(prevColor, cell);
-                    prevColor = cell.style.backgroundColor;
-                }
-
-                cell.addEventListener('mouseenter', enter);
-                cell.addEventListener('mouseleave', leave);
-                cell.addEventListener('click', click);
-            }
-        }
-    }
-}
-
-function addToPaintQueue(prevColor, cell) {
-    if (paintQueue.length > 100) {
-        paintQueue.splice(0, 1)
-    }
-    paintQueue.push({prevColor, cell})
-}
-
-function reversePaint(){
-    if (paintQueue.length > 0) {
-        paintE = paintQueue.pop();
-        changeCellColor(paintE.prevColor, paintE.cell);
-    }
-}
-
-function setColorPaletteListeners() {
-    const colorPalette = document.getElementById("colorPalette");
-    if (colorPalette != null) {
-        for (let i = 0; i < colorPalette.rows.length; i++) {
-            for (let j = 0; j < colorPalette.rows[i].cells.length; j++)
-            colorPalette.rows[i].cells[j].onclick = function () {
-                setCurrentColor(this);
-            };
-        }
-    }
 }
 
 function createColorPalette(columns) {
@@ -113,21 +60,96 @@ function createColorPalette(columns) {
     }
 }
 
-function setCurrentColor(tableCell) {
-    chosenColor = window.getComputedStyle(tableCell).getPropertyValue("background-color");
-    console.log(`chosenColor = ${chosenColor}`);
+function setCanvasListeners() {
+    let pixelCanvas = document.getElementById("pixelCanvas");
+        if (pixelCanvas != null) {
+        for (let i = 0; i < pixelCanvas.rows.length; i++) {
+            for (let j = 0; j < pixelCanvas.rows[i].cells.length; j++)
+            {
+                const cell = pixelCanvas.rows[i].cells[j];
+               
+                function enter () {
+                    prevColor = cell.style.backgroundColor;
+                    changeCellColor(chosenColor, cell);
+                    addToPaintQueue(prevColor, cell);
+                }
+                function leave () {
+                    if (!isDragging) {
+                        changeCellColor(prevColor, cell);
+                        removeFromPaintQueue();
+                    }
+                }
+
+                function setDrag (dragActive) {
+                    isDragging = dragActive;
+                    prevColor = cell.style.backgroundColor;
+                    changeCellColor(chosenColor, cell);
+                    if (dragActive == false) {
+                        addPaintToStroke();
+                    }
+                }
+
+                cell.addEventListener('mouseenter', enter);
+                cell.addEventListener('mouseleave', leave);
+                cell.addEventListener('mousedown', function() {setDrag(true);});
+                cell.addEventListener('mouseup', function() {setDrag(false);});
+            }
+        }
+    }
+}
+
+function setColorPaletteListeners() {
+    const colorPalette = document.getElementById("colorPalette");
+    if (colorPalette != null) {
+        for (let i = 0; i < colorPalette.rows.length; i++) {
+            for (let j = 0; j < colorPalette.rows[i].cells.length; j++)
+            colorPalette.rows[i].cells[j].onclick = function () {
+                chosenColor = window.getComputedStyle(this).getPropertyValue("background-color");
+            };
+        }
+    }
+}
+
+function addPaintToStroke() {
+    if (strokeQueue.length > STROKES_REMEMBERED) {
+        strokeQueue.shift();
+    }
+    strokeQueue.push(paintQueue);
+        paintQueue = [];
+}
+
+function removeFromPaintQueue() {
+    if (paintQueue.length > 0) {
+        paintQueue.pop();
+    }
+}
+
+function addToPaintQueue(prevColor, cell) {
+    if (paintQueue.length > STROKE_LENGTH) {
+        paintQueue.shift();
+    }
+    paintQueue.push({prevColor, cell})
+}
+
+function reverseStroke() {
+    if (strokeQueue.length > 0) {
+        const stroke = strokeQueue[strokeQueue.length-1];
+        for (let i = stroke.length-1; i >= 0; i--) {
+            changeCellColor(stroke[i].prevColor, stroke[i].cell);
+        }
+        strokeQueue.pop();
+    }
 }
 
 function changeCellColor(color, tableCell) {
     tableCell.style.background = color;
-    console.log("changing cell color");
 }
 
-function createImage() {
+function downloadImage() {
     let canvas = document.createElement("canvas");
 
-    canvas.width = canvasSize;
-    canvas.height = canvasSize;
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
     let ctx = canvas.getContext('2d');
     
     let pixelCanvas = document.getElementById("pixelCanvas");
@@ -138,7 +160,7 @@ function createImage() {
                 const color = pixelCanvas.rows[i].cells[j].style.backgroundColor;
                 console.log(color);
                 ctx.fillStyle = color;
-                ctx.fillRect( i, j, 1, 1 );
+                ctx.fillRect( j, i, 1, 1 );
             }
         }
     }
@@ -154,4 +176,3 @@ function createImage() {
     element.click();
     document.body.removeChild(element);
 }
-
